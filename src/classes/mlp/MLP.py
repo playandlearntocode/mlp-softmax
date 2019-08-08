@@ -51,7 +51,7 @@ class MLP:
 
         # FORWARD FEED / PASS - NODE VALUES:
         # important: use 0.0 instead of 0 (otherwise array dtype will be int)
-        self.node_values = [None, None, None]
+        self.node_values = [None, None, None, None]
         self.node_values[0] = np.array([0.0, 0.0, 0.0])
         self.node_values[1] = np.array([0.0, 0.0, 0.0])
         self.node_values[2] = np.array([0.0, 0.0])
@@ -138,19 +138,28 @@ class MLP:
             output_values = self.node_values[2]
             sum_exp_softmax = np.sum(np.exp(output_values))
             exp_different_outputs_product = np.prod(np.exp(output_values))
-            exp_quotient_value = exp_different_outputs_product / (pow(sum_exp_softmax), 2)
+            exp_quotient_value = exp_different_outputs_product / (pow(sum_exp_softmax,2)) * 1.00
 
-            gradient_value = \
-                - target_distribution[0] * pow(output_values[0], -1) * \
-                (
-                        exp_quotient_value * self.node_values[1][i]
-                ) \
-                - target_distribution[1] * pow(output_values[1], -1) * \
-                (
-                        -exp_quotient_value * self.node_values[1][i]
-                )
 
-            self.weights_gradients[1][i][output_value_index] = gradient_value
+            for output_index in range(0, self.output_layer_size):
+                # positive value if the weight is connected to current output
+                if(output_index == 0):
+                    signs = np.array([1,-1])
+                elif(output_index == 1):
+                    signs = np.array([-1, 1])
+
+
+                gradient_value = \
+                    - target_distribution[0] * pow(output_values[0], -1) * \
+                    (
+                            signs[0] * exp_quotient_value * self.node_values[1][i]
+                    ) \
+                    - target_distribution[1] * pow(output_values[1], -1) * \
+                    (
+                            signs[1] * exp_quotient_value * self.node_values[1][i]
+                    )
+
+                self.weights_gradients[1][i][output_index] = gradient_value
 
 
     # gradients between input layer and hidden layer are  smaller than the ones between hidden layer and output layer (problem of vanishing gradient appears):
@@ -174,25 +183,34 @@ class MLP:
                 output_values = self.node_values[2]
                 sum_exp_softmax = np.sum(np.exp(output_values))
                 exp_different_outputs_product = np.prod(np.exp(output_values))
-                exp_quotient_value = exp_different_outputs_product / (pow(sum_exp_softmax),2)
+                exp_quotient_value = exp_different_outputs_product / (pow(sum_exp_softmax,2)) * 1.00
 
-                gradient_value = \
-                    - target_distribution[0] * pow(output_values[0], -1) * \
-                    (
-                            exp_quotient_value * self.weights[1][j][0] * self.activation_function_derivative(
-                        pre_activation_node_value) * self.node_values[0][i]
-                            - exp_quotient_value * self.weights[1][j][1] * self.activation_function_derivative(
-                        pre_activation_node_value) * self.node_values[0][i]
-                    ) \
-                    - target_distribution[1] * pow(output_values[1], -1) * \
-                    (
-                            -exp_quotient_value * self.weights[1][j][0] * self.activation_function_derivative(
-                        pre_activation_node_value) * self.node_values[0][i]
-                            + exp_quotient_value * self.weights[1][j][1] * self.activation_function_derivative(
-                        pre_activation_node_value) * self.node_values[0][i]
-                    )
 
-                self.weights_gradients[0][i][j] = gradient_value
+                for output_index in range(0, self.output_layer_size):
+                    # positive value if the weight is connected to current output
+                    if (output_index == 0):
+                        signs = np.array([1, -1])
+                    elif (output_index == 1):
+                        signs = np.array([-1, 1])
+
+
+                    gradient_value = \
+                        - target_distribution[0] * pow(output_values[0], -1) * \
+                        (
+                               signs[0] *  exp_quotient_value * self.weights[1][j][0] * self.activation_function_derivative(
+                            pre_activation_node_value) * self.node_values[0][i]
+                              -signs[0] * exp_quotient_value * self.weights[1][j][1] * self.activation_function_derivative(
+                            pre_activation_node_value) * self.node_values[0][i]
+                        ) \
+                        - target_distribution[1] * pow(output_values[1], -1) * \
+                        (
+                                signs[1] * exp_quotient_value * self.weights[1][j][0] * self.activation_function_derivative(
+                            pre_activation_node_value) * self.node_values[0][i]
+                                - signs[1] *  exp_quotient_value  * self.weights[1][j][1] * self.activation_function_derivative(
+                            pre_activation_node_value) * self.node_values[0][i]
+                        )
+
+                    self.weights_gradients[0][i][j] = gradient_value
 
     def bp_update_weights(self):
         # fixed constant; speed of convergence:
@@ -225,9 +243,9 @@ class MLP:
             self.ff_compute_hidden_layer()
             self.ff_compute_output_layer()
 
-            for j in range(0, self.output_layer_size):
-                self.bp_compute_output_layer_gradients(target_distribution, j)
-                self.bp_compute_hidden_layer_gradients(target_distribution, j)
+
+            self.bp_compute_output_layer_gradients(target_distribution)
+            self.bp_compute_hidden_layer_gradients(target_distribution)
 
             self.bp_update_weights()
 
@@ -250,7 +268,7 @@ class MLP:
         for i in range(0, self.learning_examples_array.shape[0]):
             row = self.learning_examples_array[i]
             # target_value = row[4]
-            target_distribution = np.array(row[4], row[5])
+            target_distribution = np.array([row[4], row[5]])
 
             predicted_distribution = self.predict(row)
             # total_delta += self.compute_delta(target_value, predicted_value)
