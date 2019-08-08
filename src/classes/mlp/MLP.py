@@ -126,7 +126,7 @@ class MLP:
 
     # BACKPROPAGATION:
     # calculate the sensitivity of of weights between the hidden layer and the output layer (1 node in it)_
-    def bp_compute_output_layer_gradients(self, target_distribution):
+    def bp_compute_output_layer_gradients(self, target_distribution, output_index):
 
         for i in range(0, self.hidden_layer_size):
             # gradient_value = - 2 * delta * self.node_values[1][i]
@@ -141,29 +141,29 @@ class MLP:
             exp_quotient_value = exp_different_outputs_product / (pow(sum_exp_softmax,2)) * 1.00
 
 
-            for output_index in range(0, self.output_layer_size):
-                # positive value if the weight is connected to current output
-                if(output_index == 0):
-                    signs = np.array([1,-1])
-                elif(output_index == 1):
-                    signs = np.array([-1, 1])
+
+            # positive value if the weight is connected to current output
+            if(output_index == 0):
+                signs = np.array([1,-1])
+            elif(output_index == 1):
+                signs = np.array([-1, 1])
 
 
-                gradient_value = \
-                    - target_distribution[0] * pow(output_values[0], -1) * \
-                    (
-                            signs[0] * exp_quotient_value * self.node_values[1][i]
-                    ) \
-                    - target_distribution[1] * pow(output_values[1], -1) * \
-                    (
-                            signs[1] * exp_quotient_value * self.node_values[1][i]
-                    )
+            gradient_value = \
+                - target_distribution[0] * pow(softmax_distribution[0], -1) * \
+                (
+                        signs[0] * exp_quotient_value * self.node_values[1][i]
+                ) \
+                - target_distribution[1] * pow(softmax_distribution[1], -1) * \
+                (
+                        signs[1] * exp_quotient_value * self.node_values[1][i]
+                )
 
-                self.weights_gradients[1][i][output_index] = gradient_value
+            self.weights_gradients[1][i][output_index] = gradient_value
 
 
     # gradients between input layer and hidden layer are  smaller than the ones between hidden layer and output layer (problem of vanishing gradient appears):
-    def bp_compute_hidden_layer_gradients(self, target_distribution):
+    def bp_compute_hidden_layer_gradients(self, target_distribution, output_index):
         for i in range(0, self.input_layer_size):
             for j in range(0, self.hidden_layer_size):
                 column_vector = self.weights[0][:, [j]]
@@ -185,32 +185,30 @@ class MLP:
                 exp_different_outputs_product = np.prod(np.exp(output_values))
                 exp_quotient_value = exp_different_outputs_product / (pow(sum_exp_softmax,2)) * 1.00
 
-
-                for output_index in range(0, self.output_layer_size):
-                    # positive value if the weight is connected to current output
-                    if (output_index == 0):
-                        signs = np.array([1, -1])
-                    elif (output_index == 1):
-                        signs = np.array([-1, 1])
+                # positive value if the weight is connected to current output
+                if (output_index == 0):
+                    signs = np.array([1, -1])
+                elif (output_index == 1):
+                    signs = np.array([-1, 1])
 
 
-                    gradient_value = \
-                        - target_distribution[0] * pow(output_values[0], -1) * \
-                        (
-                               signs[0] *  exp_quotient_value * self.weights[1][j][0] * self.activation_function_derivative(
-                            pre_activation_node_value) * self.node_values[0][i]
-                              -signs[0] * exp_quotient_value * self.weights[1][j][1] * self.activation_function_derivative(
-                            pre_activation_node_value) * self.node_values[0][i]
-                        ) \
-                        - target_distribution[1] * pow(output_values[1], -1) * \
-                        (
-                                signs[1] * exp_quotient_value * self.weights[1][j][0] * self.activation_function_derivative(
-                            pre_activation_node_value) * self.node_values[0][i]
-                                - signs[1] *  exp_quotient_value  * self.weights[1][j][1] * self.activation_function_derivative(
-                            pre_activation_node_value) * self.node_values[0][i]
-                        )
+                gradient_value = \
+                    - target_distribution[0] * pow(softmax_distribution[0], -1) * \
+                    (
+                           signs[0] *  exp_quotient_value * self.weights[1][j][0] * self.activation_function_derivative(
+                        pre_activation_node_value) * self.node_values[0][i]
+                          -signs[0] * exp_quotient_value * self.weights[1][j][1] * self.activation_function_derivative(
+                        pre_activation_node_value) * self.node_values[0][i]
+                    ) \
+                    - target_distribution[1] * pow(softmax_distribution[1], -1) * \
+                    (
+                            signs[1] * exp_quotient_value * self.weights[1][j][0] * self.activation_function_derivative(
+                        pre_activation_node_value) * self.node_values[0][i]
+                            - signs[1] *  exp_quotient_value  * self.weights[1][j][1] * self.activation_function_derivative(
+                        pre_activation_node_value) * self.node_values[0][i]
+                    )
 
-                    self.weights_gradients[0][i][j] = gradient_value
+                self.weights_gradients[0][i][j] = gradient_value
 
     def bp_update_weights(self):
         # fixed constant; speed of convergence:
@@ -220,6 +218,8 @@ class MLP:
             for i in range(self.weights[layer].shape[0]):
                 for j in range(self.weights[layer].shape[1]):
                     gradient_value = self.weights_gradients[layer][i][j]
+                    # print('gv at ' + str( layer) + ' , ' + str(i) + ', ' + str(j))
+                    # print(gradient_value)
 
                     # move up or down:
                     if (gradient_value > 0):
@@ -244,8 +244,9 @@ class MLP:
             self.ff_compute_output_layer()
 
 
-            self.bp_compute_output_layer_gradients(target_distribution)
-            self.bp_compute_hidden_layer_gradients(target_distribution)
+            for k in range(0, self.output_layer_size):
+                self.bp_compute_output_layer_gradients(target_distribution, k)
+                self.bp_compute_hidden_layer_gradients(target_distribution, k)
 
             self.bp_update_weights()
 
@@ -274,7 +275,7 @@ class MLP:
             # total_delta += self.compute_delta(target_value, predicted_value)
             total_loss += self.loss_function(target_distribution, predicted_distribution)
 
-        return (total_delta, total_loss)
+        return (-99999, total_loss)
 
     # MATH FUNCTIONS:
 
@@ -295,5 +296,5 @@ class MLP:
     # return softmax value for a specified output position:
     def softmax_function(self, output_index, output_values):
         total = np.sum(np.exp(output_values))
-        return math.exp(output_values[output_index]) / total
+        return (math.exp(output_values[output_index])) / total
 
