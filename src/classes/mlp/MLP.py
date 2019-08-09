@@ -163,7 +163,7 @@ class MLP:
 
 
     # gradients between input layer and hidden layer are  smaller than the ones between hidden layer and output layer (problem of vanishing gradient appears):
-    def bp_compute_hidden_layer_gradients(self, target_distribution, output_index):
+    def bp_compute_hidden_layer_gradients(self, target_distribution):
         for i in range(0, self.input_layer_size):
             for j in range(0, self.hidden_layer_size):
                 column_vector = self.weights[0][:, [j]]
@@ -185,27 +185,17 @@ class MLP:
                 exp_different_outputs_product = np.prod(np.exp(output_values))
                 exp_quotient_value = exp_different_outputs_product / (pow(sum_exp_softmax,2)) * 1.00
 
-                # positive value if the weight is connected to current output
-                if (output_index == 0):
-                    signs = np.array([1, -1])
-                elif (output_index == 1):
-                    signs = np.array([-1, 1])
-
 
                 gradient_value = \
                     - target_distribution[0] * pow(softmax_distribution[0], -1) * \
                     (
-                           signs[0] *  exp_quotient_value * self.weights[1][j][0] * self.activation_function_derivative(
-                        pre_activation_node_value) * self.node_values[0][i]
-                          -signs[0] * exp_quotient_value * self.weights[1][j][1] * self.activation_function_derivative(
-                        pre_activation_node_value) * self.node_values[0][i]
+                           1 *  exp_quotient_value * self.weights[1][j][0] * self.activation_function_derivative(pre_activation_node_value) * self.node_values[0][i] \
+                            - 1 * exp_quotient_value * self.weights[1][j][1] * self.activation_function_derivative(pre_activation_node_value) * self.node_values[0][i]
                     ) \
                     - target_distribution[1] * pow(softmax_distribution[1], -1) * \
                     (
-                            signs[1] * exp_quotient_value * self.weights[1][j][0] * self.activation_function_derivative(
-                        pre_activation_node_value) * self.node_values[0][i]
-                            - signs[1] *  exp_quotient_value  * self.weights[1][j][1] * self.activation_function_derivative(
-                        pre_activation_node_value) * self.node_values[0][i]
+                            -1  * exp_quotient_value * self.weights[1][j][0] * self.activation_function_derivative(pre_activation_node_value) * self.node_values[0][i] \
+                                + 1 *  exp_quotient_value  * self.weights[1][j][1] * self.activation_function_derivative(pre_activation_node_value) * self.node_values[0][i]
                     )
 
                 self.weights_gradients[0][i][j] = gradient_value
@@ -235,6 +225,9 @@ class MLP:
     def train_network(self):
         print('Training network...')
         print('learning examples array:')
+
+
+
         for i in range(0, self.learning_examples_array.shape[0]):
             target_distribution = np.array([self.learning_examples_array[i][4], self.learning_examples_array[i][5]])
             # Forward pass:
@@ -246,7 +239,8 @@ class MLP:
 
             for k in range(0, self.output_layer_size):
                 self.bp_compute_output_layer_gradients(target_distribution, k)
-                self.bp_compute_hidden_layer_gradients(target_distribution, k)
+
+            self.bp_compute_hidden_layer_gradients(target_distribution)
 
             self.bp_update_weights()
 
@@ -273,7 +267,17 @@ class MLP:
 
             predicted_distribution = self.predict(row)
             # total_delta += self.compute_delta(target_value, predicted_value)
-            total_loss += self.loss_function(target_distribution, predicted_distribution)
+            current_loss = self.loss_function(target_distribution, predicted_distribution)
+            #
+            # print('target dist:')
+            # print(target_distribution)
+            #
+            # print('got this dist:')
+            # print(predicted_distribution)
+
+            # print('current loss:')
+            # print(current_loss)
+            total_loss += current_loss
 
         return (-99999, total_loss)
 

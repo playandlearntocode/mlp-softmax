@@ -2,9 +2,11 @@ import sys, math
 import random
 import numpy as np
 
-v1 = np.array([10, 10, 10])
-v2 = np.array([10, 10, 10])
+v1 = np.array([0.1, 0.9])
+v2 = np.array([0.1, 0.9])
 
+print('l2')
+print(np.log(v2))
 print(v1.shape)
 print(v2.shape)
 print('matmul:')

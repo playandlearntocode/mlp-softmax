@@ -9,14 +9,14 @@ print('MLP program starting...')
 
 #Load training data from CSV files:
 csv_data_loader = CsvDataLoader()
-data_training =  csv_data_loader.get_training_data('./../csv/correct-distributions-for-training.txt')
+data_training =  csv_data_loader.get_training_data('./../csv/correct-distributions-for-training-2.txt')
 
 mlps = [MLP(data_training)]
 
 # TRAINING PHASE:
 
 # BACKPROPAGATION SETTINGS:
-TRAIN_ITERATIONS = 100
+TRAIN_ITERATIONS = 500
 TARGET_ACCURACY = 2
 
 for i in range(0, len(mlps)):
@@ -49,12 +49,15 @@ img_extractor = ImageFeatureExtractor()
 (im_test_image, test_image_pixels) = img_extractor.load_image(test_file_path)
 (test_image_f1, test_image_f2, test_image_f3) = img_extractor.extract_features(im_test_image, test_image_pixels)
 
-test_image_row = [test_file_name, test_image_f1, test_image_f2, test_image_f3, 99999]
+test_image_row = [test_file_name, test_image_f1, test_image_f2, test_image_f3, 0,0]
+print('test row:')
 
+print(test_image_row)
 output_from_mlp = mlps[0].predict(test_image_row)
 
-print('output from object detector:')
+print('output:')
 print(output_from_mlp)
+
 #
 # if(output_from_circle>output_from_line):
 #     print('This image is a CIRCLE')
