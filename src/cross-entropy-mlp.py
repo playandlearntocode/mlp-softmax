@@ -9,14 +9,14 @@ print('MLP program starting...')
 
 #Load training data from CSV files:
 csv_data_loader = CsvDataLoader()
-data_training =  csv_data_loader.get_training_data('./../csv/correct-distributions-for-training-2.txt')
+data_training =  csv_data_loader.get_training_data('./../csv/correct-distributions-for-training-3.txt')
 
 mlps = [MLP(data_training)]
 
 # TRAINING PHASE:
 
 # BACKPROPAGATION SETTINGS:
-TRAIN_ITERATIONS = 500
+TRAIN_ITERATIONS = 100
 TARGET_ACCURACY = 2
 
 for i in range(0, len(mlps)):
@@ -58,10 +58,11 @@ output_from_mlp = mlps[0].predict(test_image_row)
 print('output:')
 print(output_from_mlp)
 
-#
-# if(output_from_circle>output_from_line):
-#     print('This image is a CIRCLE')
-# else:
-#     print('This image is a LINE')
+labels = ['CIRCLE', 'LINE']
 
+index =  numpy.argmax(output_from_mlp)
+# print('index = ' + str(index))
+label = labels[index]
+
+print ('This image is a ' + label)
 print('MLP program completed.')
