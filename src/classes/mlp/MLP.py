@@ -6,12 +6,9 @@ import numpy as np
 class MLP:
     input_layer_size = 3
     hidden_layer_size = 3
-    output_layer_size = 2
-
-
+    output_layer_size = 2 # output layer / softmax layer number of neurons
 
     # CONSTRUCTOR:
-
     def __init__(self, learning_examples_array):
         self.learning_examples_array = learning_examples_array
         self.init_weights()
@@ -83,7 +80,6 @@ class MLP:
 
             # h3 connections
             [0.0, 0.0]
-
         ])
 
     # FORWARD FEED:
@@ -93,7 +89,7 @@ class MLP:
         self.node_values[0][0] = image_info_row[1]
         self.node_values[0][1] = image_info_row[2]
         self.node_values[0][2] = image_info_row[3]
-
+        # add values to input layer:
         self.node_values[0] = np.array([image_info_row[1], image_info_row[2], image_info_row[3]])
 
     # forward pass - compute hidden layer node values:
@@ -120,62 +116,13 @@ class MLP:
         for i in range(0, self.output_layer_size):
             self.node_values[3][i] = self.softmax_function(i, self.node_values[2])
 
-    # basic difference between target ouput value and the obtained (computed) output value:
-    def compute_delta(self, target_value, computed_value):
-        return (target_value - computed_value)
-
     # BACKPROPAGATION:
     # calculate the sensitivity of of weights between the hidden layer and the output layer (1 node in it)_
-    def bp_compute_output_layer_gradients(self, target_distribution, output_index):
-
-        for i in range(0, self.hidden_layer_size):
-            # gradient_value = - 2 * delta * self.node_values[1][i]
-            # self.weights_gradients[1][i][output_value_index] = gradient_value
-
-            # FOR CE:
-            total_w_gradient = 0
-            softmax_distribution = self.node_values[3]
-            output_values = self.node_values[2]
-            sum_exp_softmax = np.sum(np.exp(output_values))
-            exp_different_outputs_product = np.prod(np.exp(output_values))
-            exp_quotient_value = exp_different_outputs_product / (pow(sum_exp_softmax,2)) * 1.00
-
-
-
-            # positive value if the weight is connected to current output
-            if(output_index == 0):
-                signs = np.array([1,-1])
-            elif(output_index == 1):
-                signs = np.array([-1, 1])
-
-
-            gradient_value = \
-                - target_distribution[0] * pow(softmax_distribution[0], -1) * \
-                (
-                        signs[0] * exp_quotient_value * self.node_values[1][i]
-                ) \
-                - target_distribution[1] * pow(softmax_distribution[1], -1) * \
-                (
-                        signs[1] * exp_quotient_value * self.node_values[1][i]
-                )
-
-            self.weights_gradients[1][i][output_index] = gradient_value
-
-
-    # gradients between input layer and hidden layer are  smaller than the ones between hidden layer and output layer (problem of vanishing gradient appears):
-    def bp_compute_hidden_layer_gradients(self, target_distribution):
-        for i in range(0, self.input_layer_size):
-            for j in range(0, self.hidden_layer_size):
-                column_vector = self.weights[0][:, [j]]
-                column_vector = column_vector.transpose()
-                input_vector = np.array(self.node_values[0])
-                pre_activation_node_value = np.matmul(column_vector, input_vector)[0]
-
-                # current_input_val = self.node_values[0][i]
-                # gradient_value = - 2 * delta * self.node_values[1][j]
-                #
-                # gradient_value = gradient_value * self.activation_function_derivative(
-                #     pre_activation_node_value) * current_input_val
+    def bp_compute_output_layer_gradients(self, target_distribution):
+        for k in range(0, self.output_layer_size):
+            for i in range(0, self.hidden_layer_size):
+                # gradient_value = - 2 * delta * self.node_values[1][i]
+                # self.weights_gradients[1][i][output_value_index] = gradient_value
 
                 # FOR CE:
                 total_w_gradient = 0
@@ -185,6 +132,39 @@ class MLP:
                 exp_different_outputs_product = np.prod(np.exp(output_values))
                 exp_quotient_value = exp_different_outputs_product / (pow(sum_exp_softmax,2)) * 1.00
 
+                # positive value if the weight is connected to current output, otherwise negative
+                if(k == 0):
+                    signs = np.array([1,-1])
+                elif(k == 1):
+                    signs = np.array([-1, 1])
+
+                gradient_value = \
+                    - target_distribution[0] * pow(softmax_distribution[0], -1) * \
+                    (
+                            signs[0] * exp_quotient_value * self.node_values[1][i]
+                    ) \
+                    - target_distribution[1] * pow(softmax_distribution[1], -1) * \
+                    (
+                            signs[1] * exp_quotient_value * self.node_values[1][i]
+                    )
+                self.weights_gradients[1][i][k] = gradient_value
+
+
+    # gradients between input layer and hidden layer are  smaller than the ones between hidden layer and output layer (problem of vanishing gradient appears):
+    def bp_compute_hidden_layer_gradients(self, target_distribution):
+        for i in range(0, self.input_layer_size):
+            for j in range(0, self.hidden_layer_size):
+                # intermediate values:
+                column_vector = self.weights[0][:, [j]]
+                column_vector = column_vector.transpose()
+                input_vector = np.array(self.node_values[0])
+                pre_activation_node_value = np.matmul(column_vector, input_vector)[0] # hidden layer node input (before logistic function)
+
+                softmax_distribution = self.node_values[3]
+                output_values = self.node_values[2]
+                sum_exp_softmax = np.sum(np.exp(output_values))
+                exp_different_outputs_product = np.prod(np.exp(output_values))
+                exp_quotient_value = exp_different_outputs_product / (pow(sum_exp_softmax,2)) * 1.00
 
                 gradient_value = \
                     - target_distribution[0] * pow(softmax_distribution[0], -1) * \
@@ -208,8 +188,6 @@ class MLP:
             for i in range(self.weights[layer].shape[0]):
                 for j in range(self.weights[layer].shape[1]):
                     gradient_value = self.weights_gradients[layer][i][j]
-                    # print('gv at ' + str( layer) + ' , ' + str(i) + ', ' + str(j))
-                    # print(gradient_value)
 
                     # move up or down:
                     if (gradient_value > 0):
@@ -224,9 +202,6 @@ class MLP:
     # take the training input data and update the weights (train the network):
     def train_network(self):
         print('Training network...')
-        print('learning examples array:')
-
-
 
         for i in range(0, self.learning_examples_array.shape[0]):
             target_distribution = np.array([self.learning_examples_array[i][4], self.learning_examples_array[i][5]])
@@ -236,12 +211,10 @@ class MLP:
             self.ff_compute_hidden_layer()
             self.ff_compute_output_layer()
 
+            # Backpropagation:
 
-            for k in range(0, self.output_layer_size):
-                self.bp_compute_output_layer_gradients(target_distribution, k)
-
+            self.bp_compute_output_layer_gradients(target_distribution)
             self.bp_compute_hidden_layer_gradients(target_distribution)
-
             self.bp_update_weights()
 
     # Predict output value for a single input vector (3 features of 1 training or testing example):
@@ -250,7 +223,6 @@ class MLP:
         self.ff_compute_hidden_layer()
         self.ff_compute_output_layer()
 
-        # output_value = self.node_values[2][0]
         softmax_outputs = self.node_values[3]
 
         return softmax_outputs
@@ -262,21 +234,10 @@ class MLP:
 
         for i in range(0, self.learning_examples_array.shape[0]):
             row = self.learning_examples_array[i]
-            # target_value = row[4]
             target_distribution = np.array([row[4], row[5]])
 
             predicted_distribution = self.predict(row)
-            # total_delta += self.compute_delta(target_value, predicted_value)
             current_loss = self.loss_function(target_distribution, predicted_distribution)
-            #
-            # print('target dist:')
-            # print(target_distribution)
-            #
-            # print('got this dist:')
-            # print(predicted_distribution)
-
-            # print('current loss:')
-            # print(current_loss)
             total_loss += current_loss
 
         return (-99999, total_loss)
