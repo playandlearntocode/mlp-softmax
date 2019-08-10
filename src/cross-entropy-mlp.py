@@ -9,7 +9,7 @@ print('MLP program starting...')
 
 #Load training data from CSV files:
 csv_data_loader = CsvDataLoader()
-data_training =  csv_data_loader.get_training_data('./../csv/correct-distributions-for-training-3.txt')
+data_training =  csv_data_loader.get_training_data('./../csv/correct-distributions-for-training.txt')
 
 mlps = [MLP(data_training)]
 
@@ -37,7 +37,6 @@ for i in range(0, len(mlps)):
 
 # TESTING PHASE:
 test_file_name = ''
-print('Enter file name to classify:')
 test_file_name = input('enter the filename:')
 
 test_file_path = './../test-images/' + test_file_name
@@ -50,7 +49,6 @@ img_extractor = ImageFeatureExtractor()
 (test_image_f1, test_image_f2, test_image_f3) = img_extractor.extract_features(im_test_image, test_image_pixels)
 
 test_image_row = [test_file_name, test_image_f1, test_image_f2, test_image_f3, 0,0]
-print('test row:')
 
 print(test_image_row)
 output_from_mlp = mlps[0].predict(test_image_row)
