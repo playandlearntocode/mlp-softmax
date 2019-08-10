@@ -2,8 +2,9 @@ import sys, math
 import random
 import numpy as np
 
-
+# Multilayer Perceptron implementation
 class MLP:
+    # NETWORK DIMENSIONS:
     input_layer_size = 3
     hidden_layer_size = 3
     output_layer_size = 2 # output layer / softmax layer number of neurons
@@ -82,8 +83,7 @@ class MLP:
             [0.0, 0.0]
         ])
 
-    # FORWARD FEED:
-
+    # FORWARD PASS:
     # set input layer values:
     def ff_apply_inputs(self, image_info_row):
         self.node_values[0][0] = image_info_row[1]
@@ -121,11 +121,6 @@ class MLP:
     def bp_compute_output_layer_gradients(self, target_distribution):
         for k in range(0, self.output_layer_size):
             for i in range(0, self.hidden_layer_size):
-                # gradient_value = - 2 * delta * self.node_values[1][i]
-                # self.weights_gradients[1][i][output_value_index] = gradient_value
-
-                # FOR CE:
-                total_w_gradient = 0
                 softmax_distribution = self.node_values[3]
                 output_values = self.node_values[2]
                 sum_exp_softmax = np.sum(np.exp(output_values))
@@ -198,21 +193,20 @@ class MLP:
                         # self.weights[layer][i][j] += learning_rate
 
     # CORE API:
-
     # take the training input data and update the weights (train the network):
     def train_network(self):
         print('Training network...')
 
         for i in range(0, self.learning_examples_array.shape[0]):
+            # real probabilities (target output) for the current training example:
             target_distribution = np.array([self.learning_examples_array[i][4], self.learning_examples_array[i][5]])
-            # Forward pass:
 
+            # Forward pass:
             self.ff_apply_inputs(self.learning_examples_array[i])
             self.ff_compute_hidden_layer()
             self.ff_compute_output_layer()
 
             # Backpropagation:
-
             self.bp_compute_output_layer_gradients(target_distribution)
             self.bp_compute_hidden_layer_gradients(target_distribution)
             self.bp_update_weights()
@@ -243,7 +237,6 @@ class MLP:
         return (-99999, total_loss)
 
     # MATH FUNCTIONS:
-
     # cross entropy : H(p,q) = -sum[p(x)*log(x)] ; over all ouputs
     def loss_function(self, target_distribution, predicted_distribution):
         cross_entropy_value = - (np.matmul(target_distribution, np.log(predicted_distribution)))
